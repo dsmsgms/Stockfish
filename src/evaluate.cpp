@@ -1097,7 +1097,7 @@ Value Eval::evaluate(const Position& pos) {
          if (nnue < 0) strongSide = ~strongSide;
          int material = pos.non_pawn_material() + PawnValueMg * pos.count<PAWN>()
 	                    + 4 * PawnValueMg * pos.count<PAWN>(strongSide);
-         int scale =  600
+         int scale = 600
                     + material / 32
                     - 4 * pos.rule50_count();
 
