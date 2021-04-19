@@ -1092,7 +1092,7 @@ Value Eval::evaluate(const Position& pos) {
       auto  adjusted_NNUE = [&]()
       {
          int material = pos.non_pawn_material() + 4 * PawnValueMg * pos.count<PAWN>();
-         int scale =  580
+         int scale =  596
                     + material / 32
                     - 4 * pos.rule50_count();
 
