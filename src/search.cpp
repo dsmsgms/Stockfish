@@ -511,7 +511,7 @@ void Thread::search() {
           fallingEval = std::clamp(fallingEval, 0.5, 1.5);
 
           Value prevScore = mainThread->bestPreviousScore;
-          double unclear = 1. + 0.3 * (60 < abs(prevScore) && abs(prevScore) < 110);
+          double unclear = 1. + 0.2 * (60 < abs(prevScore) && abs(prevScore) < 110);
 
           // If the bestMove is stable over several iterations, reduce time accordingly
           timeReduction = lastBestMoveDepth + 9 < completedDepth ? 1.92 : 0.95;
