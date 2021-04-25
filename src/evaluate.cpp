@@ -1076,6 +1076,8 @@ make_v:
 
 } // namespace Eval
 
+int D = 4;
+TUNE(SetRange(1, 10), D);
 
 /// evaluate() is the evaluator for the outer world. It returns a static
 /// evaluation of the position from the point of view of the side to move.
@@ -1094,7 +1096,7 @@ Value Eval::evaluate(const Position& pos) {
          int material = pos.non_pawn_material() + 4 * PawnValueMg * pos.count<PAWN>();
          int scale =  580
                     + material / 32
-                    - 4 * pos.rule50_count();
+                    - D * pos.rule50_count();
 
          Value nnue = NNUE::evaluate(pos) * scale / 1024 + Tempo;
 
