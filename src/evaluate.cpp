@@ -1097,6 +1097,11 @@ Value Eval::evaluate(const Position& pos) {
                     + material / 32
                     - 4 * pos.rule50_count();
 
+         if (pos.opposite_bishops() && pos.non_pawn_material() == 2*BishopValueMg) {
+             scale *= 2;
+             scale /= 3;
+         }
+
          Value nnue = NNUE::evaluate(pos) * scale / 1024 + Time.tempoNNUE;
 
          if (pos.is_chess960())
