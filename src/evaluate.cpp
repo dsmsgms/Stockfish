@@ -1096,10 +1096,12 @@ Value Eval::evaluate(const Position& pos) {
          int scale =  580
                     + material / 32
                     - 4 * pos.rule50_count();
+         int pawndiff = pos.count<PAWN>(WHITE) - pos.count<PAWN>(BLACK);
 
-         if (pos.opposite_bishops() && pos.non_pawn_material() == 2*BishopValueMg) {
-             scale *= 2;
-             scale /= 3;
+         if (pos.opposite_bishops() && pos.non_pawn_material() == 2*BishopValueMg &&
+						abs(pawndiff) <= 1) {
+           scale *= 2;
+           scale /= 3;
          }
 
          Value nnue = NNUE::evaluate(pos) * scale / 1024 + Time.tempoNNUE;
