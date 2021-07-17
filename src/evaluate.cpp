@@ -1093,8 +1093,18 @@ Value Eval::evaluate(const Position& pos) {
          int scale =   903
                      + 32 * pos.count<PAWN>()
                      + 32 * pos.non_pawn_material() / 1024;
+         Value nnue = NNUE::evaluate(pos, true);
 
-         Value nnue = NNUE::evaluate(pos, true) * scale / 1024;
+         if (pos.opposite_bishops() &&
+                pos.non_pawn_material(WHITE) == BishopValueMg &&
+                pos.non_pawn_material(BLACK) == BishopValueMg) {
+            Color strongSide = pos.side_to_move();
+            if (nnue < 0) strongSide = ~strongSide;
+            if (popcount(Pawns::probe(pos)->passed_pawns(strongSide)) <= 1)
+                scale /= 4;
+         }
+
+         nnue = nnue * scale / 1024;
 
          if (pos.is_chess960())
              nnue += fix_FRC(pos);
