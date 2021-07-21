@@ -274,6 +274,7 @@ Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si, Th
 
   // 5-6. Halfmove clock and fullmove number
   ss >> std::skipws >> st->rule50 >> gamePly;
+  st->guide50 = st->rule50;
 
   // Convert from fullmove starting from 1 to gamePly starting from 0,
   // handle also common incorrect FEN with fullmove = 0.
@@ -699,6 +700,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // in case of a capture or a pawn move.
   ++gamePly;
   ++st->rule50;
+  ++st->guide50;
   ++st->pliesFromNull;
 
   // Used by NNUE
@@ -775,6 +777,9 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
       // Reset rule 50 counter
       st->rule50 = 0;
+
+      // Reset guide 50 counter
+      st->guide50 = 0;
   }
 
   // Update hash key
@@ -847,6 +852,9 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
           // Update material
           st->nonPawnMaterial[us] += PieceValue[MG][promotion];
+
+          // Reset guide 50 counter
+          st->guide50 = 0;
       }
 
       // Update pawn hash key
@@ -1016,6 +1024,7 @@ void Position::do_null_move(StateInfo& newSt) {
   prefetch(TT.first_entry(key()));
 
   ++st->rule50;
+  ++st->guide50;
   st->pliesFromNull = 0;
 
   sideToMove = ~sideToMove;
