@@ -1116,7 +1116,7 @@ Value Eval::evaluate(const Position& pos) {
   int rule50 = pos.rule50_count();
   v = v * (100 - rule50) / 100;
   if (rule50 < 50) {
-    v = v * (300 - 2*std::min(75, rule50+pos.guide50_count())) / 300;
+    v = v * (300 - 2*std::min(75, pos.guide50_count())) / 300;
   }
 
   // Guarantee evaluation does not hit the tablebase range
