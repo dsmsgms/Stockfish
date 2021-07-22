@@ -1115,8 +1115,8 @@ Value Eval::evaluate(const Position& pos) {
   // Damp down the evaluation linearly when shuffling
   int rule50 = pos.rule50_count();
   v = v * (100 - rule50) / 100;
-  if (rule50 < 60) {
-    v = v * (200 - std::min(120, 2*rule50+3*pos.guide50_count())) / 200;
+  if (rule50 < 50) {
+    v = v * (300 - 2*std::min(75, rule50+pos.guide50_count())) / 300;
   }
 
   // Guarantee evaluation does not hit the tablebase range
