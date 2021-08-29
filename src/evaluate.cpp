@@ -1095,8 +1095,14 @@ Value Eval::evaluate(const Position& pos) {
          int scale =   883
                      + 32 * pos.count<PAWN>()
                      + 32 * pos.non_pawn_material() / 1024;
-
          Value nnue = NNUE::evaluate(pos, true) * scale / 1024;
+
+         if (pos.non_pawn_material() <= 2*BishopValueMg+2*RookValueMg
+             && pos.non_pawn_material(WHITE) == pos.non_pawn_material(BLACK)
+             && pos.opposite_bishops()) {
+            int pawndiff = pos.count<PAWN>(WHITE) - pos.count<PAWN>(BLACK);
+            if (abs(pawndiff) <= 1) nnue /= 4;
+         }
 
          if (pos.is_chess960())
              nnue += fix_FRC(pos);
