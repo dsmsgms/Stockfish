@@ -1114,12 +1114,8 @@ Value Eval::evaluate(const Position& pos) {
                     : adjusted_NNUE();                   // NNUE
   }
 
-  // Damp down the evaluation linearly when shuffling
-  v = v * (100 - pos.rule50_count()) / 100;
-
-  if (pos.rule50_count() == 0) {
-    v = v * (100-std::min(60, pos.cap50_count())) / 100;
-  }
+  int cap50 = std::min(60, pos.cap50_count());
+  v = v * (200-std::max(2*pos.rule50_count(), 3*cap50)) / 200;
 
   // Guarantee evaluation does not hit the tablebase range
   v = std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
