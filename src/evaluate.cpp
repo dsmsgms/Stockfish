@@ -1097,7 +1097,7 @@ Value Eval::evaluate(const Position& pos) {
                      + 32 * pos.count<PAWN>()
                      + 32 * mat / 1024;
 
-         Value nnue = NNUE::evaluate(pos, true) * scale / 1024 + mat / 512;
+         Value nnue = NNUE::evaluate(pos, true) * scale / 1024 + mat / 1024;
 
          if (pos.is_chess960())
              nnue += fix_FRC(pos);
