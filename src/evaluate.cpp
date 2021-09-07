@@ -1092,14 +1092,22 @@ Value Eval::evaluate(const Position& pos) {
       // Scale and shift NNUE for compatibility with search and classical evaluation
       auto  adjusted_NNUE = [&]()
       {
+         int mat = pos.non_pawn_material();
          int scale =   883
                      + 32 * pos.count<PAWN>()
-                     + 32 * pos.non_pawn_material() / 1024;
+                     + 32 * mat / 1024;
 
          Value nnue = NNUE::evaluate(pos, true) * scale / 1024;
 
          if (pos.is_chess960())
              nnue += fix_FRC(pos);
+
+         if (pos.opposite_bishops()
+             && mat <= 2*BishopValueMg + 2*RookValueMg
+             && pos.non_pawn_material(WHITE) == pos.non_pawn_material(BLACK)
+             && abs(pos.count<PAWN>(WHITE)-pos.count<PAWN>(BLACK)) <= 1) {
+            scale = (scale * 3) / 4;
+         }
 
          return nnue;
       };
