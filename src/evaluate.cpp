@@ -1058,8 +1058,12 @@ make_v:
     // imbalance. Score is computed internally from the white point of view.
     Score score = pos.psq_score() + me->imbalance() + pos.this_thread()->trend;
 
-    // Simplify as most as possible only considering middlegame value.
-    Value v = mg_value(score);
+    // Probe the pawn hash table
+    pe = Pawns::probe(pos);
+    score += pe->pawn_score(WHITE) - pe->pawn_score(BLACK);
+
+    // Derive single value from mg and eg parts of score
+    Value v = winnable(score);
 
     // Side to move point of view
     v = (pos.side_to_move() == WHITE ? v : -v);
