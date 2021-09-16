@@ -293,6 +293,7 @@ namespace {
     explicit Evaluation(const Position& p) : pos(p) {}
     Evaluation& operator=(const Evaluation&) = delete;
     Value value();
+    Value simple_value();
 
   private:
     template<Color Us> void initialize();
@@ -1039,6 +1040,33 @@ make_v:
     return v;
   }
 
+  // Simplified classical evaluation for hybrid. Classical eval not affected.
+
+  template<Tracing T>
+  Value Evaluation<T>::simple_value() {
+
+    // Probe the material hash table
+    me = Material::probe(pos);
+
+    // If we have a specialized evaluation function for the current material
+    // configuration, call it and return.
+    if (me->specialized_eval_exists())
+        return me->evaluate(pos);
+
+    // Initialize score by reading the incrementally updated scores included in
+    // the position object (material + piece square tables) and the material
+    // imbalance. Score is computed internally from the white point of view.
+    Score score = pos.psq_score() + me->imbalance();
+
+    // Simplify as most as possible only considering endgame value.
+    Value v = eg_value(score);
+
+    // Side to move point of view
+    v = (pos.side_to_move() == WHITE ? v : -v);
+
+    return v;
+  }
+
 
   /// Fisher Random Chess: correction for cornered bishops, to fix chess960 play with NNUE
 
@@ -1110,7 +1138,7 @@ Value Eval::evaluate(const Position& pos) {
       Value psq = Value(abs(eg_value(pos.psq_score())));
       bool classical = psq * 5 > (850 + pos.non_pawn_material() / 64) * (5 + r50);
 
-      v = classical ? Evaluation<NO_TRACE>(pos).value()  // classical
+      v = classical ? Evaluation<NO_TRACE>(pos).simple_value()  // classical
                     : adjusted_NNUE();                   // NNUE
   }
 
