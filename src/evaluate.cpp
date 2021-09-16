@@ -1056,10 +1056,10 @@ make_v:
     // Initialize score by reading the incrementally updated scores included in
     // the position object (material + piece square tables) and the material
     // imbalance. Score is computed internally from the white point of view.
-    Score score = pos.psq_score() + me->imbalance();
+    Score score = pos.psq_score() + me->imbalance() + pos.this_thread()->trend;
 
-    // Simplify as most as possible only considering endgame value.
-    Value v = eg_value(score);
+    // Simplify as most as possible only considering middlegame value.
+    Value v = mg_value(score);
 
     // Side to move point of view
     v = (pos.side_to_move() == WHITE ? v : -v);
