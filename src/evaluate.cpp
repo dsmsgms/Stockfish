@@ -153,7 +153,7 @@ namespace Trace {
   enum Tracing { NO_TRACE, TRACE };
 
   enum Term { // The first 8 entries are reserved for PieceType
-    MATERIAL = 8, IMBALANCE, MOBILITY, THREAT, PASSED, SPACE, WINNABLE, TOTAL, TERM_NB
+    MATERIAL = 8, IMBALANCE, MOBILITY, THREAT, PASSED, WINNABLE, TOTAL, TERM_NB
   };
 
   Score scores[TERM_NB][COLOR_NB];
@@ -194,7 +194,6 @@ namespace {
   // Threshold for lazy and space evaluation
   constexpr Value LazyThreshold1    =  Value(3631);
   constexpr Value LazyThreshold2    =  Value(2084);
-  constexpr Value SpaceThreshold    =  Value(11551);
 
   // KingAttackWeights[PieceType] contains king attack weights by piece type
   constexpr int KingAttackWeights[PIECE_TYPE_NB] = { 0, 0, 81, 52, 44, 10 };
@@ -300,7 +299,6 @@ namespace {
     template<Color Us> Score king() const;
     template<Color Us> Score threats() const;
     template<Color Us> Score passed() const;
-    template<Color Us> Score space() const;
     Value winnable(Score score) const;
 
     const Position& pos;
@@ -820,48 +818,6 @@ namespace {
     return score;
   }
 
-
-  // Evaluation::space() computes a space evaluation for a given side, aiming to improve game
-  // play in the opening. It is based on the number of safe squares on the four central files
-  // on ranks 2 to 4. Completely safe squares behind a friendly pawn are counted twice.
-  // Finally, the space bonus is multiplied by a weight which decreases according to occupancy.
-
-  template<Tracing T> template<Color Us>
-  Score Evaluation<T>::space() const {
-
-    // Early exit if, for example, both queens or 6 minor pieces have been exchanged
-    if (pos.non_pawn_material() < SpaceThreshold)
-        return SCORE_ZERO;
-
-    constexpr Color Them     = ~Us;
-    constexpr Direction Down = -pawn_push(Us);
-    constexpr Bitboard SpaceMask =
-      Us == WHITE ? CenterFiles & (Rank2BB | Rank3BB | Rank4BB)
-                  : CenterFiles & (Rank7BB | Rank6BB | Rank5BB);
-
-    // Find the available squares for our pieces inside the area defined by SpaceMask
-    Bitboard safe =   SpaceMask
-                   & ~pos.pieces(Us, PAWN)
-                   & ~attackedBy[Them][PAWN];
-
-    // Find all squares which are at most three squares behind some friendly pawn
-    Bitboard behind = pos.pieces(Us, PAWN);
-    behind |= shift<Down>(behind);
-    behind |= shift<Down+Down>(behind);
-
-    // Compute space score based on the number of safe squares and number of our pieces
-    // increased with number of total blocked pawns in position.
-    int bonus = popcount(safe) + popcount(behind & safe & ~attackedBy[Them][ALL_PIECES]);
-    int weight = pos.count<ALL_PIECES>(Us) - 3 + std::min(pe->blocked_count(), 9);
-    Score score = make_score(bonus * weight * weight / 16, 0);
-
-    if constexpr (T)
-        Trace::add(SPACE, Us, score);
-
-    return score;
-  }
-
-
   // Evaluation::winnable() adjusts the midgame and endgame score components, based on
   // the known attacking/defending status of the players. The final value is derived
   // by interpolation from the midgame and endgame values.
@@ -909,41 +865,7 @@ namespace {
 
     // If scale factor is not already specific, scale up/down via general heuristics
     if (sf == SCALE_FACTOR_NORMAL)
-    {
-        if (pos.opposite_bishops())
-        {
-            // For pure opposite colored bishops endgames use scale factor
-            // based on the number of passed pawns of the strong side.
-            if (   pos.non_pawn_material(WHITE) == BishopValueMg
-                && pos.non_pawn_material(BLACK) == BishopValueMg)
-                sf = 18 + 4 * popcount(pe->passed_pawns(strongSide));
-            // For every other opposite colored bishops endgames use scale factor
-            // based on the number of all pieces of the strong side.
-            else
-                sf = 22 + 3 * pos.count<ALL_PIECES>(strongSide);
-        }
-        // For rook endgames with strong side not having overwhelming pawn number advantage
-        // and its pawns being on one flank and weak side protecting its pieces with a king
-        // use lower scale factor.
-        else if (  pos.non_pawn_material(WHITE) == RookValueMg
-                && pos.non_pawn_material(BLACK) == RookValueMg
-                && pos.count<PAWN>(strongSide) - pos.count<PAWN>(~strongSide) <= 1
-                && bool(KingSide & pos.pieces(strongSide, PAWN)) != bool(QueenSide & pos.pieces(strongSide, PAWN))
-                && (attacks_bb<KING>(pos.square<KING>(~strongSide)) & pos.pieces(~strongSide, PAWN)))
-            sf = 36;
-        // For queen vs no queen endgames use scale factor
-        // based on number of minors of side that doesn't have queen.
-        else if (pos.count<QUEEN>() == 1)
-            sf = 37 + 3 * (pos.count<QUEEN>(WHITE) == 1 ? pos.count<BISHOP>(BLACK) + pos.count<KNIGHT>(BLACK)
-                                                        : pos.count<BISHOP>(WHITE) + pos.count<KNIGHT>(WHITE));
-        // In every other case use scale factor based on
-        // the number of pawns of the strong side reduced if pawns are on a single flank.
-        else
-            sf = std::min(sf, 36 + 7 * pos.count<PAWN>(strongSide)) - 4 * !pawnsOnBothFlanks;
-
-        // Reduce scale factor in case of pawns being on a single flank
-        sf -= 4 * !pawnsOnBothFlanks;
-    }
+        sf = std::min(sf, 36 + 7 * pos.count<PAWN>(strongSide)) - 8 * !pawnsOnBothFlanks;
 
     // Interpolate between the middlegame and (scaled by 'sf') endgame score
     v =  mg * int(me->game_phase())
@@ -1016,8 +938,7 @@ namespace {
     if (lazy_skip(LazyThreshold2))
         goto make_v;
 
-    score +=  threats<WHITE>() - threats<BLACK>()
-            + space<  WHITE>() - space<  BLACK>();
+    score +=  threats<WHITE>() - threats<BLACK>();
 
 make_v:
     // Derive single value from mg and eg parts of score
@@ -1161,7 +1082,6 @@ std::string Eval::trace(Position& pos) {
      << "|King safety | " << Term(KING)
      << "|    Threats | " << Term(THREAT)
      << "|     Passed | " << Term(PASSED)
-     << "|      Space | " << Term(SPACE)
      << "|   Winnable | " << Term(WINNABLE)
      << "+------------+-------------+-------------+-------------+\n"
      << "|      Total | " << Term(TOTAL)
