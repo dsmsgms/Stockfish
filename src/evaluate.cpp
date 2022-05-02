@@ -1105,6 +1105,8 @@ Value Eval::evaluate(const Position& pos) {
        Value psq      = (stm == WHITE ? 1 : -1) * eg_value(pos.psq_score());
        int complexity = 35 * abs(nnue - psq) / 256;
 
+       if (pos.count<PAWN>(~stm) >= 2)
+           scale -= 8 * pos.pawn_cap_ply();
        optimism = optimism * (44 + complexity) / 31;
        v = (nnue + optimism) * scale / 1024 - optimism;
 
