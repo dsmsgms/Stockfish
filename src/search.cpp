@@ -472,6 +472,14 @@ void Thread::search() {
 
           double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition;
 
+          if ( rootMoves.size() >= 2
+               && rootDepth >= 11
+               && bestValue < 10000) {
+            Value secondBest = rootMoves[1].rawScore;
+            if (secondBest < bestValue - 300)
+                reduction /= 4;
+          }
+
           // Cap used time in case of a single legal move for a better viewer experience in tournaments
           // yielding correct scores and sufficiently fast moves.
           if (rootMoves.size() == 1)
@@ -1281,11 +1289,13 @@ moves_loop: // When in check, search starts here
                   && !thisThread->pvIdx)
                   ++thisThread->bestMoveChanges;
           }
-          else
+          else {
               // All other moves but the PV are set to the lowest value: this
               // is not a problem when sorting because the sort is stable and the
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
+              rm.rawScore = value;
+          }
       }
 
       if (value > bestValue)
