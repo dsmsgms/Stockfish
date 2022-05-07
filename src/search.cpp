@@ -470,6 +470,14 @@ void Thread::search() {
           int complexity = mainThread->complexityAverage.value();
           double complexPosition = std::clamp(1.0 + (complexity - 326) / 1618.1, 0.5, 1.5);
 
+          if ( rootMoves.size() >= 2
+               && rootDepth >= 11
+               && bestValue < 10000) {
+              Value secondBest = rootMoves[1].rawScore;
+              if (secondBest < bestValue - 300)
+                  reduction /= 4;
+          }
+
           double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition;
 
           // Cap used time in case of a single legal move for a better viewer experience in tournaments
@@ -1281,11 +1289,13 @@ moves_loop: // When in check, search starts here
                   && !thisThread->pvIdx)
                   ++thisThread->bestMoveChanges;
           }
-          else
+          else {
               // All other moves but the PV are set to the lowest value: this
               // is not a problem when sorting because the sort is stable and the
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
+              rm.rawScore = value;
+          }
       }
 
       if (value > bestValue)
