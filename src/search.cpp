@@ -1269,6 +1269,7 @@ moves_loop: // When in check, search starts here
                                     thisThread->rootMoves.end(), move);
 
           rm.averageScore = rm.averageScore != -VALUE_INFINITE ? (2 * value + rm.averageScore) / 3 : value;
+          rm.rawScore = value;
 
           // PV move or new best move?
           if (moveCount == 1 || value > alpha)
@@ -1294,7 +1295,6 @@ moves_loop: // When in check, search starts here
               // is not a problem when sorting because the sort is stable and the
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
-              rm.rawScore = value;
           }
       }
 
