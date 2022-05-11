@@ -552,7 +552,7 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
-    bool givesCheck, improving, didLMR, priorCapture;
+    bool givesCheck, improving, didLMR, priorCapture, someSingExt;
     bool capture, doFullDepthSearch, moveCountPruning, ttCapture;
     Piece movedPiece;
     int moveCount, captureCount, quietCount, improvement, complexity;
@@ -950,6 +950,7 @@ moves_loop: // When in check, search starts here
 
     value = bestValue;
     moveCountPruning = false;
+    someSingExt = false;
 
     // Indicate PvNodes that will probably fail low if the node was searched
     // at a depth equal or greater than the current depth, and the result of this search was a fail low.
@@ -1078,6 +1079,7 @@ moves_loop: // When in check, search starts here
 
               if (value < singularBeta)
               {
+                  someSingExt = true;
                   extension = 1;
 
                   // Avoid search explosion by limiting the number of double extensions
@@ -1165,6 +1167,9 @@ moves_loop: // When in check, search starts here
 
           // Increase reduction if ttMove is a capture (~3 Elo)
           if (ttCapture)
+              r++;
+
+          if (!extension && someSingExt)
               r++;
 
           // Decrease reduction at PvNodes if bestvalue
