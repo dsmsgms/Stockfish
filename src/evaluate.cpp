@@ -1099,6 +1099,7 @@ Value Eval::evaluate(const Position& pos) {
   if (useNNUE && !useClassical)
   {
        Value nnue     = NNUE::evaluate(pos, true);     // NNUE
+       int shuffle    = std::min(600, pos.pawn_cap_ply() * pos.pawn_cap_ply() / 8);
        int scale      = 1036 + 22 * pos.non_pawn_material() / 1024;
        Color stm      = pos.side_to_move();
        Value optimism = pos.this_thread()->optimism[stm];
@@ -1106,7 +1107,8 @@ Value Eval::evaluate(const Position& pos) {
        int complexity = 35 * abs(nnue - psq) / 256;
 
        if (pos.count<PAWN>(~stm) >= 2)
-           scale -= 8 * pos.pawn_cap_ply();
+           scale -= shuffle;
+
        optimism = optimism * (44 + complexity) / 31;
        v = (nnue + optimism) * scale / 1024 - optimism;
 
