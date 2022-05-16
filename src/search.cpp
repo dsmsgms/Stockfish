@@ -469,11 +469,21 @@ void Thread::search() {
           // If the bestMove is stable over several iterations, reduce time accordingly
           timeReduction = lastBestMoveDepth + 10 < completedDepth ? 1.63 : 0.73;
           double reduction = (1.56 + mainThread->previousTimeReduction) / (2.20 * timeReduction);
-          double bestMoveInstability = 1 + 1.7 * totBestMoveChanges / Threads.size();
+          double bestInstability = 1 + 1.7 * totBestMoveChanges / Threads.size();
           int complexity = mainThread->complexityAverage.value();
           double complexPosition = std::clamp(1.0 + (complexity - 326) / 1618.1, 0.5, 1.5);
+          double forcedBonus = 1.02;
 
-          double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition;
+          if ( rootDepth >= 8
+               && rootMoves.size() >= 2
+               && rootMoves[1].averageScore < bestValue - 240)
+          {
+              fallingEval = std::min(1.0, fallingEval);
+              complexPosition = std::min(1.0, complexPosition);
+              forcedBonus = 0.2;
+          }
+
+          double totalTime = Time.optimum() * fallingEval * reduction * bestInstability * complexPosition * forcedBonus;
 
           // Cap used time in case of a single legal move for a better viewer experience in tournaments
           // yielding correct scores and sufficiently fast moves.
