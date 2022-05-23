@@ -151,7 +151,7 @@ namespace Eval {
 
 namespace Trace {
 
-  enum Tracing { NO_TRACE, TRACE };
+  enum Tracing { NO_TRACE, NO_TRACE_HYBRID , TRACE };
 
   enum Term { // The first 8 entries are reserved for PieceType
     MATERIAL = 8, IMBALANCE, MOBILITY, THREAT, PASSED, SPACE, WINNABLE, TOTAL, TERM_NB
@@ -522,7 +522,7 @@ namespace {
                 score -= WeakQueen;
         }
     }
-    if constexpr (T)
+    if constexpr (T == TRACE)
         Trace::add(Pt, Us, score);
 
     return score;
@@ -622,7 +622,7 @@ namespace {
     // Penalty if king flank is under attack, potentially moving toward the king
     score -= FlankAttacks * kingFlankAttack;
 
-    if constexpr (T)
+    if constexpr (T == TRACE)
         Trace::add(KING, Us, score);
 
     return score;
@@ -723,7 +723,7 @@ namespace {
         score += SliderOnQueen * popcount(b & safe & attackedBy2[Us]) * (1 + queenImbalance);
     }
 
-    if constexpr (T)
+    if constexpr (T == TRACE)
         Trace::add(THREAT, Us, score);
 
     return score;
@@ -816,7 +816,7 @@ namespace {
         score += bonus - PassedFile * edge_distance(file_of(s));
     }
 
-    if constexpr (T)
+    if constexpr (T == TRACE)
         Trace::add(PASSED, Us, score);
 
     return score;
@@ -857,7 +857,7 @@ namespace {
     int weight = pos.count<ALL_PIECES>(Us) - 3 + std::min(pe->blocked_count(), 9);
     Score score = make_score(bonus * weight * weight / 16, 0);
 
-    if constexpr (T)
+    if constexpr (T == TRACE)
         Trace::add(SPACE, Us, score);
 
     return score;
@@ -889,7 +889,6 @@ namespace {
                     +  9 * outflanking
                     + 21 * pawnsOnBothFlanks
                     + 24 * infiltration
-                    + 51 * !pos.non_pawn_material()
                     - 43 * almostUnwinnable
                     -110 ;
 
@@ -910,7 +909,10 @@ namespace {
     int sf = me->scale_factor(pos, strongSide);
 
     // If scale factor is not already specific, scale up/down via general heuristics
-    if (sf == SCALE_FACTOR_NORMAL)
+    if (sf == SCALE_FACTOR_NORMAL && T == NO_TRACE_HYBRID)
+    {
+        sf = std::min(sf, 36 + 7 * pos.count<PAWN>(strongSide)) - 8 * !pawnsOnBothFlanks;
+    } else if (sf == SCALE_FACTOR_NORMAL)
     {
         if (pos.opposite_bishops())
         {
@@ -952,7 +954,7 @@ namespace {
        + eg * int(PHASE_MIDGAME - me->game_phase()) * ScaleFactor(sf) / SCALE_FACTOR_NORMAL;
     v /= PHASE_MIDGAME;
 
-    if constexpr (T)
+    if constexpr (T == TRACE)
     {
         Trace::add(WINNABLE, make_score(u, eg * ScaleFactor(sf) / SCALE_FACTOR_NORMAL - eg_value(score)));
         Trace::add(TOTAL, make_score(mg, eg * ScaleFactor(sf) / SCALE_FACTOR_NORMAL));
@@ -1018,15 +1020,16 @@ namespace {
     if (lazy_skip(LazyThreshold2))
         goto make_v;
 
-    score +=  threats<WHITE>() - threats<BLACK>()
-            + space<  WHITE>() - space<  BLACK>();
+    score +=  threats<WHITE>() - threats<BLACK>();
+    if constexpr (T != NO_TRACE_HYBRID)
+        score += space<WHITE>() - space<BLACK>();
 
 make_v:
     // Derive single value from mg and eg parts of score
     Value v = winnable(score);
 
     // In case of tracing add all remaining individual evaluation terms
-    if constexpr (T)
+    if constexpr (T == TRACE)
     {
         Trace::add(MATERIAL, pos.psq_score());
         Trace::add(IMBALANCE, me->imbalance());
@@ -1092,8 +1095,8 @@ Value Eval::evaluate(const Position& pos) {
       || ((pos.this_thread()->depth > 9 || pos.count<ALL_PIECES>() > 7) &&
           abs(eg_value(pos.psq_score())) * 5 > (856 + pos.non_pawn_material() / 64) * (10 + pos.rule50_count())))
   {
-      v = Evaluation<NO_TRACE>(pos).value();          // classical
-      useClassical = abs(v) >= 297;
+      v = useNNUE ? Evaluation<NO_TRACE_HYBRID>(pos).value() : Evaluation<NO_TRACE>(pos).value(); // classical
+      useClassical = abs(v) >= 292;
   }
 
   // If result of a classical evaluation is much lower than threshold fall back to NNUE
