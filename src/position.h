@@ -45,6 +45,7 @@ struct StateInfo {
   Value  nonPawnMaterial[COLOR_NB];
   int    castlingRights;
   int    rule50;
+  int    capPly;
   int    pliesFromNull;
   Square epSquare;
 
@@ -160,6 +161,7 @@ public:
   bool has_game_cycle(int ply) const;
   bool has_repeated() const;
   int rule50_count() const;
+  int capture_ply() const;
   Score psq_score() const;
   Value non_pawn_material(Color c) const;
   Value non_pawn_material() const;
@@ -356,6 +358,10 @@ inline int Position::game_ply() const {
 
 inline int Position::rule50_count() const {
   return st->rule50;
+}
+
+inline int Position::capture_ply() const {
+  return st->capPly;
 }
 
 inline bool Position::opposite_bishops() const {
