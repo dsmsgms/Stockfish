@@ -1554,6 +1554,9 @@ moves_loop: // When in check, search starts here
           && !pos.see_ge(move))
           continue;
 
+      if ( depth <= -4 && bestValue > -VALUE_INFINITE && !(pos.this_thread()->nodes & 7))
+          continue;
+
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
 
