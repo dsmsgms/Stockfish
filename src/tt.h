@@ -43,6 +43,7 @@ struct TTEntry {
   Depth depth() const { return (Depth)depth8 + DEPTH_OFFSET; }
   bool is_pv()  const { return (bool)(genBound8 & 0x4); }
   Bound bound() const { return (Bound)(genBound8 & 0x3); }
+  bool found(Key key) const { return (key16 == (uint16_t)key) & (depth8 != 0); }
   void save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev);
 
 private:
@@ -83,7 +84,7 @@ class TranspositionTable {
 public:
  ~TranspositionTable() { aligned_large_pages_free(table); }
   void new_search() { generation8 += GENERATION_DELTA; } // Lower bits are used for other things
-  TTEntry* probe(const Key key, bool& found) const;
+  TTEntry* probe(const Key key) const;
   int hashfull() const;
   void resize(size_t mbSize);
   void clear();
