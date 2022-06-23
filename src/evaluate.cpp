@@ -1114,6 +1114,13 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
        optimism = optimism * (269 + nnueComplexity) / 256;
        v = (nnue * scale + optimism * (scale - 754)) / 1024;
 
+       Color strongSide = (v > 0) ? stm : ~stm;
+       if ( pos.non_pawn_material(BLACK) == pos.non_pawn_material(WHITE)
+            && pos.non_pawn_material(WHITE) == RookValueMg
+            && pos.count<PAWN>(strongSide) - pos.count<PAWN>(~strongSide) == 1
+            && v < 280 * PawnValueEg / 100)
+           v /= 2;
+
        if (pos.is_chess960())
            v += fix_FRC(pos);
   }
