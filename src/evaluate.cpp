@@ -1114,6 +1114,20 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
        optimism = optimism * (269 + nnueComplexity) / 256;
        v = (nnue * scale + optimism * (scale - 754)) / 1024;
 
+       Color strongSide = v > 0 ? stm : ~stm;
+       // The condition is intentionally general: If the stronger side only has a Bishop,
+       // a win is inviable without promoting.
+       if (pos.non_pawn_material(strongSide) == BishopValueMg) {
+           Bitboard DSB = pos.pieces(strongSide, BISHOP) & DarkSquares;
+           Bitboard wrongFile = FileHBB >> 7 * (strongSide ^ bool(DSB));
+           if (pos.count<PAWN>(strongSide) == 0) {
+               v /= 8;
+           } else if (std::abs(v) <= 375 && !(pos.pieces(strongSide, PAWN) & (~wrongFile))) {
+               // If the defending king is misplaced, NNUE gives a higher eval (>+200cp)
+               v /= 8;
+           }
+       }
+
        if (pos.is_chess960())
            v += fix_FRC(pos);
   }
