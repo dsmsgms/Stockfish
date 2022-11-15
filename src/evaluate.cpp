@@ -1082,6 +1082,17 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
 
       optimism = optimism * (269 + nnueComplexity) / 256;
       v = (nnue * scale + optimism * (scale - 754)) / 1024;
+
+      Color strongSide = nnue > 0 ? stm : ~stm;
+      int pc = pos.count<PAWN>();
+      if (    std::abs(v) < 21*PawnValueEg/10
+           && std::abs(pos.non_pawn_material(WHITE) - pos.non_pawn_material(BLACK)) <= BishopValueMg-KnightValueMg
+           && pos.count<PAWN>() > 7) {
+          Pawns::Entry* pe = Pawns::probe(pos);
+          int bpc = pe->blocked_count();
+          if (bpc*5 >= pc && !pe->free_pawns(strongSide))
+              v -= (v*bpc*2)/(5*pc);
+      }
   }
 
   // Damp down the evaluation linearly when shuffling
