@@ -1082,6 +1082,12 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
 
       optimism = optimism * (269 + nnueComplexity) / 256;
       v = (nnue * scale + optimism * (scale - 754)) / 1024;
+
+      Color strongSide = (nnue > 0) ? stm : ~stm;
+      if (std::abs(v) <= 9*PawnValueEg/5) {
+          Pawns::Entry* pe = Pawns::probe(pos);
+          v -= (-(pe->free_pawns(strongSide)==0))&(v/8);
+      }
   }
 
   // Damp down the evaluation linearly when shuffling
