@@ -103,6 +103,7 @@ namespace {
 
     Bitboard doubleAttackThem = pawn_double_attacks_bb<Them>(theirPawns);
 
+    e->freePawns[Us] = 0;
     e->passedPawns[Us] = 0;
     e->kingSquares[Us] = SQ_NONE;
     e->pawnAttacks[Us] = e->pawnAttacksSpan[Us] = pawn_attacks_bb<Us>(ourPawns);
@@ -127,6 +128,11 @@ namespace {
         neighbours = ourPawns   & adjacent_files_bb(s);
         phalanx    = neighbours & rank_bb(s);
         support    = neighbours & rank_bb(s - Up);
+
+        // A "free" pawn is a pawn with no stoppers beside levers or
+        // at most one adjacent stopper
+        if (!(stoppers ^ lever) || (!opposed && popcount(stoppers ^ opposed) <= 1))
+            e->freePawns[Us] |= s;
 
         if (doubled)
         {
