@@ -470,6 +470,9 @@ void Thread::search() {
           int complexity = mainThread->complexityAverage.value();
           double complexPosition = std::min(1.0 + (complexity - 261) / 1738.7, 1.5);
 
+          if (rootMoves.size() >= 2 && rootDepth > 10)
+              reduction *= std::clamp(1 - int(rootMoves[0].averageScore - rootMoves[1].averageScore)/14000.0, 0.5, 1.0);
+
           double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition;
 
           // Cap used time in case of a single legal move for a better viewer experience in tournaments
