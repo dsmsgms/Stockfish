@@ -150,6 +150,41 @@ namespace {
     return nodes;
   }
 
+  template <typename It1, typename It2>
+  void limit_sort(It1 begin, It1 end, Value val, It2 ssend) {
+      if (end - begin == 1)
+          return;
+
+      It1 i = end - 1, iplace = end - 1;
+      It2 ssi = ssend - 1;
+      while (i->score == val)
+      {
+          --iplace;
+          --i;
+      }
+      if (i == begin)
+          return;
+
+      while (i >= begin)
+      {
+          if (i->score != val)
+          {
+              *ssi = std::move(*i);
+              --ssi;
+              --i;
+          } else
+          {
+              *iplace = std::move(*i);
+              --iplace;
+              --i;
+          }
+      }
+
+      size_t tosort = ssend - (ssi + 1);
+      std::copy_n(ssi + 1, tosort, begin);
+      if (tosort > 1)
+          std::stable_sort(begin, begin + tosort);
+  }
 } // namespace
 
 
@@ -267,6 +302,7 @@ void Thread::search() {
   // The latter is needed for statScore and killer initialization.
   Stack stack[MAX_PLY+10], *ss = stack+7;
   Move  pv[MAX_PLY+1];
+  RootMoves sort_space;
   Value alpha, beta, delta;
   Move  lastBestMove = MOVE_NONE;
   Depth lastBestMoveDepth = 0;
@@ -274,6 +310,8 @@ void Thread::search() {
   double timeReduction = 1, totBestMoveChanges = 0;
   Color us = rootPos.side_to_move();
   int iterIdx = 0;
+
+  for (int i = 0; i < MAX_MOVES+1; i++) sort_space.emplace_back(MOVE_NULL);
 
   std::memset(ss-7, 0, 10 * sizeof(Stack));
   for (int i = 7; i > 0; i--)
@@ -378,7 +416,7 @@ void Thread::search() {
               // and we want to keep the same order for all the moves except the
               // new PV that goes to the front. Note that in case of MultiPV
               // search the already searched PV lines are preserved.
-              std::stable_sort(rootMoves.begin() + pvIdx, rootMoves.begin() + pvLast);
+              limit_sort(rootMoves.begin() + pvIdx, rootMoves.begin() + pvLast, -VALUE_INFINITE, sort_space.end());
 
               // If search has been stopped, we break immediately. Sorting is
               // safe because RootMoves is still valid, although it refers to
@@ -419,7 +457,8 @@ void Thread::search() {
           }
 
           // Sort the PV lines searched so far and update the GUI
-          std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
+          if (pvIdx + 1 - pvFirst > 1)
+              std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
           if (    mainThread
               && (Threads.stop || pvIdx + 1 == multiPV || Time.elapsed() > 3000))
