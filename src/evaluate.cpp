@@ -1087,7 +1087,7 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
       if (    pos.opposite_bishops()
            && (   pos.non_pawn_material() == 2*BishopValueMg+2*RookValueMg
                || pos.non_pawn_material() == 2*BishopValueMg)
-           && std::abs(v) < 150*PawnValueEg/100
+           && std::abs(v) < 140*PawnValueEg/100
            && pos.count<PAWN>(strongSide) == 1+pos.count<PAWN>(~strongSide))
           v = (3 * v) / 4;
   }
