@@ -1460,6 +1460,12 @@ moves_loop: // When in check, search starts here
             (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
                                              : -(ss-1)->staticEval;
 
+        if (ss->ply >= 3) {
+            // Discourage "2-fold" repetition at root
+            Move ply1move = (ss-(ss->ply-1))->currentMove, ply3move = (ss-(ss->ply-3))->currentMove;
+            bestValue -= (ply3move == make_move(to_sq(ply1move), from_sq(ply1move)));
+        }
+
         // Stand pat. Return immediately if static value is at least beta
         if (bestValue >= beta)
         {
