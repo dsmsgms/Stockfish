@@ -1084,7 +1084,7 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
       v = (nnue * scale + optimism * (scale - 754)) / 1024;
   }
 
-  int cap_ply = unsigned(pos.cap_ply())/2;
+  int cap_ply = unsigned(pos.cap_ply())/4;
   // Damp down the evaluation linearly when shuffling
   v = v * (195 - std::max(pos.rule50_count(), cap_ply)) / 211;
 
