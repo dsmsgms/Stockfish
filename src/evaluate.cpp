@@ -1044,6 +1044,17 @@ make_v:
 
 } // namespace Eval
 
+namespace {
+  Value rookBishopDrawScale(const Position& pos, Value eval, Color rookSide) {
+      bool kingsBishop = (!!(pos.pieces(BISHOP) & DarkSquares)) ^ int(rookSide);
+      Bitboard rPawns = pos.pieces(rookSide, PAWN), bPawns = pos.pieces(~rookSide, PAWN);
+      Bitboard wing = kingsBishop ? (FileGBB | FileHBB) : (FileABB | FileBBB);
+
+      bool drawish = !(rPawns & ~wing) && popcount(bPawns & wing)>=2;
+
+      return drawish ? (eval/2) : eval;
+  }
+}
 
 /// evaluate() is the evaluator for the outer world. It returns a static
 /// evaluation of the position from the point of view of the side to move.
@@ -1069,6 +1080,16 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
       Value optimism = pos.this_thread()->optimism[stm];
 
       Value nnue = NNUE::evaluate(pos, true, &nnueComplexity);
+
+      int matw = pos.non_pawn_material(WHITE), matb = pos.non_pawn_material(BLACK);
+      Color rookSide = (matb == RookValueMg) ? BLACK : WHITE;
+      if (    matw+matb == BishopValueMg+RookValueMg
+           && pos.count<PAWN>(rookSide) == 2
+           && matw >= BishopValueMg
+           && matb >= BishopValueMg
+           && (nnue > 0) ^ (rookSide != stm)
+           && !Pawns::probe(pos)->passed_pawns(rookSide))
+          nnue = rookBishopDrawScale(pos, nnue, rookSide);
 
       // Blend nnue complexity with (semi)classical complexity
       nnueComplexity = (  412 * nnueComplexity
