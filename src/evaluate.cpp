@@ -1070,6 +1070,13 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
 
       Value nnue = NNUE::evaluate(pos, true, &nnueComplexity);
 
+      if (    std::abs(pos.non_pawn_material(WHITE) - pos.non_pawn_material(BLACK)) > BishopValueMg-KnightValueMg
+           && optimism > 0
+           && nnue < 0
+           && nnue >- 117*UCI::NormalizeToPawnValue/100
+         )
+         nnue -= nnue/8;
+
       // Blend nnue complexity with (semi)classical complexity
       nnueComplexity = (  412 * nnueComplexity
                         + 428 * abs(psq - nnue)
