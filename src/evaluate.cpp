@@ -24,6 +24,7 @@
 #include <iomanip>
 #include <sstream>
 #include <iostream>
+#include <filesystem>
 #include <streambuf>
 #include <vector>
 
@@ -94,7 +95,7 @@ namespace Eval {
         {
             if (directory != "<internal>")
             {
-                ifstream stream(directory + eval_file, ios::binary);
+                ifstream stream(std::filesystem::path(directory + eval_file), ios::binary);
                 if (load_eval(eval_file, stream))
                     currentEvalFileName = eval_file;
             }
