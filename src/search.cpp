@@ -1498,7 +1498,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         moveCount++;
 
         // Step 6. Pruning
-        if (bestValue > VALUE_TB_LOSS_IN_MAX_PLY && pos.non_pawn_material(us))
+        if (bestValue > VALUE_TB_LOSS_IN_MAX_PLY && pos.non_pawn_material(us) && ss->ply > 1)
         {
             // Futility pruning and moveCount pruning (~10 Elo)
             if (!givesCheck && to_sq(move) != prevSq && futilityBase > VALUE_TB_LOSS_IN_MAX_PLY
