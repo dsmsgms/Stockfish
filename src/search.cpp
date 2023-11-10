@@ -485,8 +485,9 @@ void Thread::search() {
                 && std::abs(bestValue) < 5*UCI::NormalizeToPawnValue
                 && rootMoves.size() > 1
                 && !rootMoves[0].scoreUpperbound) {
-                double bestMargin = double(bestValue-rootMoves[1].upperScore)/UCI::NormalizeToPawnValue;
-                double bestMarginRed = 1.247-0.308*std::clamp(bestMargin, 0.76, 3.4);
+                Value secondBest = rootMoves[1].upperScore;
+                double bestMargin = double(bestValue-secondBest)/UCI::NormalizeToPawnValue;
+                double bestMarginRed = 1.266-0.402*std::clamp(bestMargin, 0.6, 2.9);
                 totalTime *= bestMarginRed;
             }
 
@@ -1250,7 +1251,7 @@ moves_loop:  // When in check, search starts here
             rm.averageScore =
               rm.averageScore != -VALUE_INFINITE ? (2 * value + rm.averageScore) / 3 : value;
             rm.upperScore =
-              rm.upperScore != -VALUE_INFINITE ? std::min((15 * rm.upperScore  + value) / 16, value) : value;
+              rm.upperScore != -VALUE_INFINITE ? std::min((22 * rm.upperScore  + value) / 23, value) : value;
 
             // PV move or new best move?
             if (moveCount == 1 || value > alpha)
