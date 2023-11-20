@@ -481,6 +481,15 @@ void Thread::search() {
 
             double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability;
 
+            if (completedDepth > 11
+                && std::abs(bestValue) < 4*UCI::NormalizeToPawnValue
+                && rootMoves.size() > 1
+                && !rootMoves[0].scoreUpperbound) {
+                double bm = std::clamp(double(bestValue-rootMoves[1].upperScore)/UCI::NormalizeToPawnValue, 1.0, 3.0);
+                double bestMarginRed = 0.05*bm*bm-bm*0.65+1.6;
+                totalTime *= bestMarginRed;
+            }
+
             // Cap used time in case of a single legal move for a better viewer experience
             if (rootMoves.size() == 1)
                 totalTime = std::min(500.0, totalTime);
@@ -1248,6 +1257,8 @@ moves_loop:  // When in check, search starts here
 
             rm.averageScore =
               rm.averageScore != -VALUE_INFINITE ? (2 * value + rm.averageScore) / 3 : value;
+            rm.upperScore =
+              rm.upperScore != -VALUE_INFINITE ? std::min((21 * rm.upperScore + value) / 22, value) : value;
 
             // PV move or new best move?
             if (moveCount == 1 || value > alpha)
