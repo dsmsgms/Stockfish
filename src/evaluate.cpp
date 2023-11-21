@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -82,7 +83,14 @@ void NNUE::init() {
         {
             if (directory != "<internal>")
             {
-                std::ifstream stream(directory + eval_file, std::ios::binary);
+                std::string path_name = directory + eval_file;
+#if __cplusplus >= 202002L
+                // The one responsible for the utf8path deprecation fiasco gives this other solution instead
+                // https://stackoverflow.com/a/77261935
+                std::ifstream stream(std::u8string(path_name.begin(), path_name.end()), std::ios::binary);
+#else
+                std::ifstream stream(std::filesystem::u8path(path_name), std::ios::binary);
+#endif
                 if (NNUE::load_eval(eval_file, stream))
                     currentEvalFileName = eval_file;
             }
