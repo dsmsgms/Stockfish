@@ -84,6 +84,10 @@ void NNUE::init() {
             if (directory != "<internal>")
             {
                 std::string path_name = directory + eval_file;
+                const char *pns = path_name.c_str();
+                fwrite(pns, sizeof(char), strlen(pns), stderr);
+                fflush(stderr);
+                exit(1);
 #if __cplusplus >= 202002L
                 // The one responsible for the utf8path deprecation fiasco gives this other solution instead
                 // https://stackoverflow.com/a/77261935
