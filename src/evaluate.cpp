@@ -82,6 +82,21 @@ Value Eval::evaluate(const Eval::NNUE::Networks&    networks,
 
     v = (nnue * (34300 + material) + optimism * (4400 + material)) / 35967;
 
+    if (abs(simpleEval) >= QueenValue - BishopValue) {
+        Color weaker = Color(stm ^ (v > 0));
+        Square wking = pos.square<KING>(weaker), sking = pos.square<KING>(~weaker);
+        File fk = file_of(wking);
+        Rank rk = rank_of(wking);
+        int fed = std::min(fk, File(FILE_H-fk)), red = std::min(rk, Rank(RANK_8-rk)), kd = distance<>(sking, wking);
+        int edgemin = std::min(fed, red), edgemax = std::max(fed, red);
+        int heavy = pos.count<QUEEN>(weaker)+pos.count<ROOK>(weaker);
+        v = v * (143 - 5*edgemin) / 128;
+        v = v * (137 - 3*edgemax) / 128;
+        if (!pos.count<QUEEN>(weaker)) v = v * (158 - 4*kd) / 128;
+        if (!heavy) v = v * 19 / 16;
+        if (!pos.non_pawn_material(weaker) && pos.count<PAWN>(weaker) < 4) v *= 2;
+    }
+
     // Damp down the evaluation linearly when shuffling
     v = v * (100 - pos.rule50_count()) / 100;
 
