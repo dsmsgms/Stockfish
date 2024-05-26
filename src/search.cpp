@@ -236,7 +236,7 @@ void Search::Worker::iterative_deepening() {
     Value  alpha, beta;
     Value  bestValue     = -VALUE_INFINITE;
     Color  us            = rootPos.side_to_move();
-    double timeReduction = 1, totBestMoveChanges = 0;
+    double timeReduction = 1, totBestMoveChanges = 0, totLowPVTranspositions = 0;
     int    delta, iterIdx                        = 0;
 
     // Allocate stack with extra size to allow access from (ss - 7) to (ss + 2):
@@ -281,9 +281,11 @@ void Search::Worker::iterative_deepening() {
     while (++rootDepth < MAX_PLY && !threads.stop
            && !(limits.depth && mainThread && rootDepth > limits.depth))
     {
-        // Age out PV variability metric
-        if (mainThread)
+        // Age out PV variability metric and transpositions-to-PV metric
+        if (mainThread) {
             totBestMoveChanges /= 2;
+            totLowPVTranspositions /= 2;
+        }
 
         // Save the last iteration's scores before the first PV line is searched and
         // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -431,7 +433,9 @@ void Search::Worker::iterative_deepening() {
         for (Thread* th : threads)
         {
             totBestMoveChanges += th->worker->bestMoveChanges;
+            totLowPVTranspositions += th->worker->lowPVTranspositions;
             th->worker->bestMoveChanges = 0;
+            th->worker->lowPVTranspositions = 0;
         }
 
         // Do we have time for the next iteration? Can we stop searching now?
@@ -447,12 +451,14 @@ void Search::Worker::iterative_deepening() {
             // If the bestMove is stable over several iterations, reduce time accordingly
             timeReduction    = lastBestMoveDepth + 8 < completedDepth ? 1.495 : 0.687;
             double reduction = (1.48 + mainThread->previousTimeReduction) / (2.17 * timeReduction);
-            double bestMoveInstability = 1 + 1.88 * totBestMoveChanges / threads.size();
+            int number_of_threads = threads.size();
+            double bestMoveInstability = 1 + 1.88 * totBestMoveChanges / number_of_threads;
+            double transposition = std::max(0.85, 1 - 0.01 * lowPVTranspositions / number_of_threads);
             int    el                  = std::clamp((bestValue + 750) / 150, 0, 9);
             double recapture           = limits.capSq == rootMoves[0].pv[0].to_sq() ? 0.955 : 1.005;
 
             double totalTime = mainThread->tm.optimum() * fallingEval * reduction
-                             * bestMoveInstability * EvalLevel[el] * recapture;
+                             * transposition * bestMoveInstability * EvalLevel[el] * recapture;
 
             // Cap used time in case of a single legal move for a better viewer experience
             if (rootMoves.size() == 1)
@@ -614,6 +620,10 @@ Value Search::Worker::search(
     // to save indentation, we list the condition in all code between here and there.
     if (!excludedMove)
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
+	
+    if (ss->ttPv && ss->ply == 3 && (ss-3)->moveCount > 1 && (ss-3)->moveCount < 4
+                 && (ss-1)->moveCount + (ss-2)->moveCount == 2)
+        thisThread->lowPVTranspositions++;
 
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && !excludedMove && tte->depth() > depth
