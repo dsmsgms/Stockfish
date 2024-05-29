@@ -83,7 +83,7 @@ Value Eval::evaluate(const Eval::NNUE::Networks&    networks,
     v = (nnue * (34300 + material) + optimism * (4400 + material)) / 35967;
 
     if (abs(simpleEval) >= QueenValue - BishopValue) {
-        Color weaker = Color(stm ^ (v > 0));
+        Color weaker = Color(pos.side_to_move() ^ (v > 0));
         Square wking = pos.square<KING>(weaker), sking = pos.square<KING>(~weaker);
         File fk = file_of(wking);
         Rank rk = rank_of(wking);
