@@ -1195,6 +1195,11 @@ moves_loop:  // When in check, search starts here
             // over current beta
             else if (cutNode)
                 extension = -2;
+
+
+            if (extension > 0 && std::abs(ss->staticEval) > 630)
+                extension = 0;
+
         }
 
         // Step 16. Make the move
